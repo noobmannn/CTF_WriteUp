@@ -1,0 +1,181 @@
+```
+
+
+
+POP_RDX_RBX
+7
+0x6161617861616177
+POP_RSI
+0x2000
+POP_RDI
+0x0000000000500000
+POP_R9
+0
+POP_R8
+0xffffffffffffffff
+POP_RCX 
+0x0000000000000022
+mmap
+
+
+POP_RDX_RBX
+0xf6
+0x636161626361617a
+POP_RSI
+0x0000000000500000
+POP_RDI
+0
+read
+
+
+POP_RSI 
+0xf6
+POP_RDI
+0x0000000000500000
+memfrob
+
+
+POP_RSI
+0
+POP_RDI
+main
+0x0000000000500000 mov    rdi, QWORD PTR [rdi+rsi*1]
+srandom
+
+
+POP_RSI
+0
+POP_RDI
+argv
+0x500000
+POP_RSI
+8
+0x0000000000500000  mov    rdi, QWORD PTR [rdi+rsi*1]
+POP_RSI
+0x00000000005000d3 -> "Usage: ./rop FLAG"
+0x00000000005000b9   test   rdi, rdi
+                    je     0x5000bf -> call exit
+
+
+
+
+POP_RSI
+0x00000000005000f6   string
+0x0000000000500005   mov    QWORD PTR [rsi], rdi
+
+
+strlen
+0x0000000000500031   call rax
+0x0000000000500009
+
+
+//rdi is now length
+POP_RSI
+0x0000000025649d94
+0x000000000050000d push   rdi
+                0x50000e:	push   rsi
+                0x50000f:	call   0x40b520 <rand> // rax 0x25649d88
+                0x500014:	pop    rsi
+                0x500015:	pop    rdi
+                0x500016:	xor    rdi,rax
+                0x500019:	xor    rdi,rsi
+                0x50001c:	mov    rdi,0x0
+                0x500023:	mov    r9,0x1  
+                0x50002a:	cmove  rdi,r9
+                0x50002e:	xor    esi,esi
+                0x500030:	ret    
+
+
+0x00000000005000b9   
+                test   rdi, rdi
+                0x5000bc                  je     0x5000bf
+
+
+POP_RSI
+0
+POP_RDI
+0x00000000005000f6 string  
+0x500000            rdi, QWORD PTR [rdi+rsi*1]
+0x0000000000500034  mov    rsi, rdi
+POP_RDI
+0x00000000005000f6  string
+strcpy
+0x0000000000500031 call rax
+
+
+POP_RSI
+0
+POP_RDI
+0x00000000005000f6  string
+0X50000             mov    rdi, QWORD PTR [rdi+rsi*1]
+0x0000000000500038  shl    rdi, 0x8
+                     shr    rdi, 0x8  
+0x0000000000500075
+                        mov    rcx,0x25
+                0x50007c:	mov    r8,rdi
+                0x50007f:	mov    r9,0x1
+                0x500086:	test   r8,r8
+                0x500089:	je     0x5000b5   ->  mov    rdi,r9
+                0x50008b:	test   r8,0x1
+                0x500092:	je     0x5000a2
+                0x500094:	mov    rdi,r9
+                0x500097:	mov    rsi,rcx
+                0x50009a:	call   0x500041
+                0x50009f:	mov    r9,rdi
+                0x5000a2:	mov    rdi,rcx
+                0x5000a5:	mov    rsi,rcx
+                0x5000a8:	call   0x500041
+                0x5000ad:	mov    rcx,rdi
+                0x5000b0:	shr    r8,1
+                0x5000b3:	jmp    0x500086
+                0x5000b5:	mov    rdi,r9
+                0x5000b8:	ret 
+
+
+
+
+
+POP_RSI
+0x144e5d523792d5ba
+0x000000000050000d
+0x00000000005000b9
+POP_RSI
+0x0000000000000007
+POP_RDI
+0x00000000005000f6  string
+0x0000000000500000   mov    rdi, QWORD PTR [rdi+rsi*1]
+0x0000000000500038
+0x0000000000500075
+POP_RSI
+0x074673b80c8e5901
+0x000000000050000d
+0x00000000005000b9
+POP_RSI
+0x000000000000000e
+POP_RDI
+0x00000000005000f6  string
+0x0000000000500000   mov    rdi, QWORD PTR [rdi+rsi*1]
+0x0000000000500038
+0x0000000000500075
+POP_RSI
+0x1602c4a2e244d043
+0x000000000050000d
+0x00000000005000b9
+POP_RSI
+0x0000000000000015
+POP_RDI
+0x00000000005000f6  string
+0x0000000000500000    mov    rdi, QWORD PTR [rdi+rsi*1]
+0x0000000000500038
+0x0000000000500075
+POP_RSI
+0x089fd614a79a8273
+0x000000000050000d
+0x00000000005000b9
+POP_RDI
+0x00000000005000e5
+puts
+POP_RDI
+0 
+exit
+```
