@@ -52,11 +52,92 @@ Quay lại ``library.so`` và xref theo hàm ``send_satellite_message``, ta th�
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/2d763367-6317-46c6-9798-983775913e0f)
 
-Về ``sub_23E3``, sau khi phân tích kĩ mình nhận ra rằng hàm này đầu tiên dựa vào hàm ``sub_21A9`` để lấy địa chỉ của hàm ``read``, sau đó thực hiện hàng loạt các bước biến đổi phức tạp để biến ``byte_11A9`` thành Shellcode, cuối cùng thay địa chỉ của hàm ``read`` thành địa chỉ của các Shellcode vừa được biến đổi xong trên kia
+### Phân tích hàm sub_23E3
 
-![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/67c4bf2f-e339-4dd9-adaf-9b47dd4ed2cc)
+![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/90f8dfb4-140e-4c5f-8ca8-2042d11e0076)
 
-Để ý kĩ lại chương trình, trước khi chạy vào vòng lặp kia, chương trình có gọi đến hàm ``_send_satellite_message`` trước, bây giờ khi debug lại và chạy vào nó trước, mình đã vào được hàm xử lý có vẻ giống với hàm  ``sub_25D0``
+Đầu tiên chương trình gọi hàm ``getauxval`` với tham số truyền vào là 0x3 (tương đương với Enum ``AT_PHDR``). Hàm này nhằm được sử dụng để truy xuất các giá trị từ vector phụ trợ (auxiliary vector), đây là một phần của môi trường tiến trình cung cấp các thông tin khác nhau về tiến trình cho kernel và hệ thống. Với tham số là ``AT_PHDR``, hàm này trả về địa chỉ của program headers trong tiến trình. Đây là một mảng các cấu trúc Elf32_Phdr hoặc Elf64_Phdr, tùy thuộc vào kiến trúc của hệ thống (32-bit hoặc 64-bit). Ở trường hợp của bài là mảng các cấu trúc Elf64_Phdr. 
+
+Tiếp theo chương trình gọi đến hàm ``sub_21A9``
+
+![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/2d0f27d6-3749-441e-a79f-58cfb95af72e)
+
+Đầu tiên hàm thực hiện một vòng lặp phức tạp như dưới đây
+
+```C
+  phdrs = (Elf64_Phdr *)((char *)hdr + hdr->p_filesz);
+  symtab = 0LL;
+  jmprel = 0LL;
+  strtab = 0LL;
+  for ( i = 0; i < LOWORD(hdr[1].p_type); ++i )
+  {
+    if ( phdrs[i].p_type == PT_DYNAMIC )
+    {
+      for ( j = (Elf64_Dyn *)((char *)hdr + phdrs[i].p_offset); j->d_tag; ++j )
+      {
+        switch ( j->d_tag )
+        {
+          case DT_SYMTAB:
+            symtab = (Elf64_Sym *)((char *)hdr + j->d_un);
+            break;
+          case DT_STRTAB:
+            strtab = (char *)hdr + j->d_un;
+            break;
+          case DT_JMPREL:
+            jmprel = (Elf64_Rela *)((char *)hdr + j->d_un);
+            break;
+        }
+      }
+    }
+  }
+  if ( !symtab || !strtab || !jmprel )
+    return 0LL;
+```
+
+Vòng lặp này nhằm làm những việc sau:
+- Đầu tiên duyệt qua toàn bộ các mảng cấu trúc Elf64_Phdr để tìm mảng có type là ``PT_DYNAMIC``, đây là một loại entry trong bảng Program Header Table, được sử dụng để mô tả một segment động. Segment này chứa các thông tin cần thiết cho quá trình liên kết động (dynamic linking), như các thư viện động cần thiết, các bảng con trỏ, các bảng băm (hash tables), và các thông tin khác.
+- Sau khi tìm thấy mảng cấu trúc cần thiết, chương trình tiếp tục thực hiện duyệt toàn bộ mảng trên để tìm cấu trúc Elf_Dyn có giá trị ``d_tag`` là ``DT_SYMTAB`` sau đó lưu địa chỉ của nó vào ``symtab``. Đây chính là con trỏ trỏ đến toàn bộ các ``symbol``, tức là toàn bộ các tên hàm trong file Elf. Tương tự với hai case còn lại là ``DT_STRTAB`` - chứa địa chỉ của bảng chuỗi, được lưu vào ``strtab`` và ``DT_JMPREL`` - chứa địa chỉ của bảng các PLT - Procedure Linkage Table, bảng này chứa các con trỏ trỏ đến địa chỉ các hàm, được lưu vào ``jmprel``
+
+```C
+  v4 = -1;
+  for ( k = 0; &symtab[k] < (Elf64_Sym *)strtab; ++k )
+  {
+    v11 = &symtab[k];
+    if ( v11->st_name && !strcmp(&strtab[v11->st_name], name) )
+    {
+      v4 = k;
+      break;
+    }
+  }
+  if ( v4 < 0 )
+    return 0LL;
+  while ( jmprel->r_offset )
+  {
+    if ( HIDWORD(jmprel->r_info) == v4 )
+      return (__int64)hdr + jmprel->r_offset;
+    ++jmprel;
+  }
+  return 0LL;
+}
+```
+
+Phần còn lại của hàm thực hiện hai vòng lặp:
+- Duyệt toàn bộ mảng ``symtab``, đối với mỗi giá trị, chúng ta xác định tên của nó dựa theo bảng ``strtab`` rồi so sánh với giá trị ``name`` được truyền vào, trong trường hợp cụ thể của chúng ta là tên hàm ``read``. Nếu tìm thấy thì trả về k và lưu nó vào v4
+- Tiếp theo hàm duyệt tiếp qua bảng ``jmprel``, nếu tìm thấy giá trị nào có ``r_info`` trùng với v4, chương trình sẽ trả về địa chỉ của hàm cần tìm.
+
+Tổng kết lại, mục đích của hàm ``sub_21A9`` nhằm tìm địa chỉ của hàm có tên được chỉ định. Ở đây là hàm ``read``
+
+Quay lại hàm ``sub_23E3``, sau khi tìm được địa chỉ hàm ``read``, về cơ bản chương trình sao chép toàn bộ byte của ``byte_11A9`` vào biến ``dest`` rồi gọi hàm ``memfrob``, hàm này đơn giản chỉ là xor từng byte của ``byte_11A9`` với ``0x2A``. Kết quả thu được là một đoạn Shellcode. Sau đó ghi đè toàn bộ đoạn Shellcode trên vào hàm ``read`` như ở dưới. 
+
+```C
+  dest = mmap(0LL, (((char *)sub_21A9 - (char *)byte_11A9) & 0xFFFFFFFFFFFFF000LL) + 4096, 7, 34, -1, 0LL);
+  memcpy(dest, byte_11A9, (char *)sub_21A9 - (char *)byte_11A9);
+  memfrob(dest, (char *)sub_21A9 - (char *)byte_11A9);
+  result = readFuncAddr;
+  *readFuncAddr = dest;
+```
+
+Bây giờ ta quay lại file ``satelitte``. Để ý kĩ lại chương trình, trước khi chạy vào vòng lặp kia, chương trình có gọi đến hàm ``_send_satellite_message`` trước, bây giờ khi debug lại và chạy vào nó trước, mình đã vào được hàm xử lý có vẻ giống với hàm  ``sub_25D0``
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/765748ea-72f4-42f4-973a-5bde9459d0f3)
 
