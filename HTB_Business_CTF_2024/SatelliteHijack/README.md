@@ -62,6 +62,8 @@ Về ``sub_23E3``, sau khi phân tích kĩ mình nhận ra rằng hàm này đ�
 
 Bây giờ thì mình sẽ SetIP để cho chương trình chắc chắn chạy qua hàm ``sub_23E3``, sau đó quay lại ``main``, đặt breakpoint tại lệnh gọi hàm ``_read`` để trace tới và chạy thẳng vào hàm đó, lúc này chương trình đã nhảy vào các Shellcode được tính trước đó ở ``sub_23E3``
 
+![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/962ea5fb-13d3-4ef8-94b6-da8df6d651b9)
+
 ### Phân tích Shellcode
 
 Ấn P để chuyển Shellcode sang dạng hàm, có thể nhìn được cơ bản chương trình sẽ chạy như dưới đây
