@@ -46,7 +46,7 @@ Mở ``library.so`` bằng IDA64 và xem qua các hàm của nó, dễ dàng nh�
 
 Đọc qua hàm và dựa vào giá trị mà hàm truyền vào ở hàm ``main`` của chương trình, dễ nhận thấy chương trình chỉ đơn giản là lặp đi lặp lại việc nối chuỗi chúng ta nhập vào với chuỗi ``START`` được khai báo sẵn rồi sau đó cũng chẳng để làm gì cả???
 
-![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/93bba2e0-180c-4917-bf61-35bf777a23a8)
+![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/2cb4ebc3-457a-4abe-96ce-b5747b33515d)
 
 Quay lại ``library.so`` và xref theo hàm ``send_satellite_message``, ta thấy hàm này được gọi bới hàm ``sub_25D0`` như dưới đây. Về cơ bản hàm đang muốn lấy giá trị của biến môi trường ``SAT_PROD_ENVIRONMENT``, nếu giá trị này có tồn tại thì chương trình sẽ chạy vào hàm ``sub_23E3``, còn không thì bỏ qua và chạy tiếp vào ``send_satellite_message``
 
