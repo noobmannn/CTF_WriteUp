@@ -4,7 +4,7 @@ Challange cho chúng ta một file ELF64 ``satellite`` và một file thư việ
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/53a6a475-0d45-4f35-bccb-45b88faadf12)
 
-Khi run file, chương trình sẽ hiện lên cái Thumbnail như dưới và cứ liên tục bắt bạn nhập gì đó
+Khi run file, chương trình sẽ hiện lên cái Thumbnail như dưới và cứ liên tục bắt người dùng nhập gì đó
 
 ```
          ,-.
@@ -44,7 +44,7 @@ Mở ``library.so`` bằng IDA64 và xem qua các hàm của nó, dễ dàng nh�
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/73601a1c-1c11-4af2-9b47-069953f20432)
 
-Đọc qua hàm và dựa vào giá trị mà hàm truyền vào ở hàm ``main`` của chương trình, dễ nhận thấy chương trình chỉ đơn giản là lặp đi lặp lại việc nối chuỗi chúng ta nhập vào với chuỗi ``START`` được khai báo sẵn rồi sau đó cũng chảng để làm gì cả???
+Đọc qua hàm và dựa vào giá trị mà hàm truyền vào ở hàm ``main`` của chương trình, dễ nhận thấy chương trình chỉ đơn giản là lặp đi lặp lại việc nối chuỗi chúng ta nhập vào với chuỗi ``START`` được khai báo sẵn rồi sau đó cũng chẳng để làm gì cả???
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/93bba2e0-180c-4917-bf61-35bf777a23a8)
 
