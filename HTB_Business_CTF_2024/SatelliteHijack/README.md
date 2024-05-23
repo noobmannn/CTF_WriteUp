@@ -32,7 +32,7 @@ Sending `ull`
 > 
 ```
 
-Mở file bằng IDA64, chương trình về cơ bản là in ra Thumbnail, sau đó dùng một vòng lặp ``while(1)`` để bắt chúng ta nhập input liên tọi rồi đưa input đó vào hàm ``send_satellite_message`` để xử lý
+Mở file bằng IDA64, chương trình về cơ bản là in ra Thumbnail, sau đó dùng một vòng lặp ``while(1)`` để bắt chúng ta nhập input liên tục rồi đưa input đó vào hàm ``send_satellite_message`` để xử lý
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/d51c86c6-3f4e-4acb-8834-82f90d167778)
 
