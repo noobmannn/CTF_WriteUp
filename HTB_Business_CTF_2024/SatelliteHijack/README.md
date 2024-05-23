@@ -56,7 +56,7 @@ Về ``sub_23E3``, sau khi phân tích kĩ mình nhận ra rằng hàm này đ�
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/67c4bf2f-e339-4dd9-adaf-9b47dd4ed2cc)
 
-Để ý kĩ lại chương trình, chước khi chạy vào vòng lặp kia, chương trình có gọi đến hàm ``_send_satellite_message`` trước, bây giờ khi debug lại và chạy vào nó trước, mình đã vào được hàm xử lý có vẻ giống với hàm  ``sub_25D0``
+Để ý kĩ lại chương trình, trước khi chạy vào vòng lặp kia, chương trình có gọi đến hàm ``_send_satellite_message`` trước, bây giờ khi debug lại và chạy vào nó trước, mình đã vào được hàm xử lý có vẻ giống với hàm  ``sub_25D0``
 
 ![image](https://github.com/noobmannn/CTF_WriteUp/assets/102444334/765748ea-72f4-42f4-973a-5bde9459d0f3)
 
