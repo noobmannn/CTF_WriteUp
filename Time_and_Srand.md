@@ -120,7 +120,7 @@ print()
 
 Chạy Script trên bằng máy ảo Linux, thu được flag của Challenge: ``HTB{r4nd_1s_v3ry_pr3d1ct4bl3}``
 
-# Paranonia - AKASEC CTF 2024
+## Paranonia - AKASEC CTF 2024
 
 Challenge cho một file ELF, mở bằng IDA thì hàm Main trông như dưới đây
 
