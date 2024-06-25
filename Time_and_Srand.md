@@ -191,3 +191,98 @@ Flag: akasec{n0t_t00_m4ny_br41nc3lls_l3ft}
 ```
 
 Vậy ``akasec{n0t_t00_m4ny_br41nc3lls_l3ft}`` là Flag của challenge
+
+## Ví dụ trong trường hợp nếu chương trình không có hàm Srand
+
+Chương trình dưới đây yêu cầu người dùng nhập Username và Password. Nếu đúng thì sẽ chạy lệnh ``cat flag`` để lấy flag. Dễ thấy username là ``admin``
+
+```C
+__int64 __fastcall main(__int64 a1, char **a2, char **a3)
+{
+  char s[56]; // [rsp+10h] [rbp-40h] BYREF
+  unsigned __int64 v5; // [rsp+48h] [rbp-8h]
+
+  v5 = __readfsqword(0x28u);
+  susrandd();
+  memset(s, 0, 0x32uLL);
+  __isoc99_scanf("%49s", s);
+  if ( !strcmp(s, s1) )
+  {
+    __isoc99_scanf("%49s", s);
+    if ( !strcmp(s, SUS_KEY) )
+    {
+      printf("Welcome, %s!\n", s1);
+      if ( !strcmp(s1, "admin") )
+        system("cat flag");
+    }
+    else
+    {
+      printf("Invalid password!\n");
+    }
+  }
+  else
+  {
+    printf("Invalid ID!\n");
+  }
+  return 0LL;
+}
+```
+
+Vấn đề là ở Password, chương trình gọi hàm ``susrand`` để Gen Password, cấu trúc như dưới đây:
+
+```C
+__int64 sub_11B0()
+{
+  int v1; // [rsp+0h] [rbp-10h]
+  int i; // [rsp+4h] [rbp-Ch]
+
+  for ( i = 0; i < 16; ++i )
+  {
+    v1 = rand() % 3;
+    if ( v1 )
+    {
+      if ( v1 == 1 )
+      {
+        SUS_KEY[i] = rand() % 26 + 65;
+      }
+      else if ( v1 == 2 )
+      {
+        SUS_KEY[i] = rand() % 26 + 97;
+      }
+    }
+    else
+    {
+      SUS_KEY[i] = rand() % 10 + '0';
+    }
+  }
+  return 0LL;
+}
+```
+
+Nếu chương trình không có hàm srand thì mặc định seed của srand là 1. Khi đó ta có thể viết code để dựng lại Password như dưới đây
+
+```C
+import ctypes
+
+libc = ctypes.cdll.LoadLibrary('/lib/x86_64-linux-gnu/libc.so.6')
+sus_key = ''
+for i in range(16):
+    v1 = libc.rand() % 3
+    if v1:
+        if v1 == 1:
+            sus_key += chr(libc.rand() % 26 + 65)
+        elif v1 == 2:
+            sus_key += chr(libc.rand() % 26 + 97)
+    else:
+        sus_key += chr(libc.rand() % 10 + 0x30)
+print(sus_key)
+```
+
+Thu được Password là ``W5bQ1dro6Yi9sdRm``, chạy lại chương trình và lấy Flag
+
+```
+admin
+W5bQ1dro6Yi9sdRm
+Welcome, admin!
+KCSC{345y_r4nd0m!!!}
+```
