@@ -398,3 +398,6 @@ Sau khi giải kết thúc, mình đọc solution trên discord và thấy rằn
 
 ![image](https://github.com/user-attachments/assets/7c8920db-68ea-43b0-ba8d-0c47d2c732be)
 
+Mình sẽ cài hashcat cho Windows, sửa lại file ``m05100_a3-optimized.cl`` trong thư mục OpenCL như ở [đây](https://github.com/noobmannn/CTF_WriteUp/blob/main/corCTF_2024/digest-me/rsrc/m05100_a3-optimized.cl), sau đó chạy lệnh ``hashcat.exe --self-test-disable -O -m 5100 -a 3 -1 ?d?u?l 19c603ba14353ce4 ?1?1?1?1?1?1?1 -w 3``
+
+Nhưng có vẻ như máy của mình quá yếu :(
