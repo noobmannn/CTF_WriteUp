@@ -388,6 +388,13 @@ Tổng kết lại chương trình sẽ thực hiện như sau:
 - Tiếp theo là biến đổi chuỗi 11 kí tự trên bằng thuật toán băm MD5 đã bị custom bằng cách sửa A, B, C, D thành 4 số 0
 - Cuối cùng là check Hash thu được xem 8 byte cuối của nó có trùng với ``19c603ba14353ce4`` hay không. Nếu đúng thì biến đổi và gen ra Flag thật của chương trình
 
-# Solution
+### Solution
 
+Như ta biết thì MD5 là một thuật toán Hash, nó không thể dịch ngược, vì vậy để tìm được chuỗi gốc thì chỉ còn nước là phải thực hiện Brute-Force :(
+
+Nhưng chuỗi đầu vào tận 11 kí tự, thêm một vài điều kiện nữa thì nó còn 7 kí tự cần phải tìm. Việc brute-force 7 kí tự vẫn là quá khó :(
+
+Sau khi giải kết thúc, mình đọc solution trên discord và thấy rằng nên sửa lại tool [hashcat](https://github.com/hashcat/hashcat) và dùng nó để brute-force hiệu quả hơn
+
+![image](https://github.com/user-attachments/assets/7c8920db-68ea-43b0-ba8d-0c47d2c732be)
 
