@@ -625,6 +625,6 @@ Full flag: corctf{youtu.be/dQw4w9WgXcQ}
 
 # Note
 
-Hãy mua máy M1 hoặc Chip 2080 để Brute-force phê hơn :v
+Hãy mua M1 hoặc 2080 để Brute-force phê hơn :v
 
 ![image](https://github.com/user-attachments/assets/3131e7f5-a736-4705-bc77-8b45c9ff2083)
