@@ -398,6 +398,227 @@ Sau khi giải kết thúc, mình đọc solution trên discord và thấy rằn
 
 ![image](https://github.com/user-attachments/assets/7c8920db-68ea-43b0-ba8d-0c47d2c732be)
 
-Mình sẽ cài hashcat cho Windows, sửa lại file ``m05100_a3-optimized.cl`` trong thư mục OpenCL như ở [đây](https://github.com/noobmannn/CTF_WriteUp/blob/main/corCTF_2024/digest-me/rsrc/m05100_a3-optimized.cl), sau đó chạy lệnh ``hashcat.exe --self-test-disable -O -m 5100 -a 3 -1 ?d?u?l 19c603ba14353ce4 ?1?1?1?1?1?1?1 -w 3``
+Mình sẽ cài hashcat cho Windows, sửa lại file ``m05100_a3-optimized.cl`` trong thư mục OpenCL như ở [đây](https://github.com/noobmannn/CTF_WriteUp/blob/main/corCTF_2024/digest-me/rsrc/m05100_a3-optimized.cl), sau đó chạy lệnh ``hashcat.exe --self-test-disable -O -m 5100 -a 3 -1 ?d?u?l 19c603ba14353ce4 ?1?1?1?1?1?1?1 -w 3``. Mục đích câu lệnh này là để brte-force kí tự theo chế độ half-MD5 của hashcat, với ``?d?u?l`` xác định kiểu là chuỗi chỉ gồm chữ hoa, thường và số, ``?1?1?1?1?1?1?1`` là định dạng chuỗi cần tìm.
 
 Nhưng có vẻ như máy của mình quá yếu :(
+
+![image](https://github.com/user-attachments/assets/9e1840f4-cd44-4e24-8280-86a5296d82c6)
+
+Một cách khác mình tham khảo từ team ``Maple Bacon`` là viết chương trình bằng code C, sử dụng Vector hoá ``AVX-512``, và thiết lặp chạy đa luồng nhằm giảm thời gian brute-force, bằng cách này thời gian brute-force sẽ giảm còn xuống khoảng 1 tiếng rưỡi. Các bạn có thể đọc kĩ hơn ở [đây](https://maplebacon.org/2024/07/corctf-digest-me/)
+
+```C
+// gcc -O3 -march=native -o brute brute.c && ./brute
+
+#include <immintrin.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+#define AVX512_F 0xca
+#define AVX512_G 0xe4
+#define AVX512_H 0x96
+#define AVX512_I 0x39
+
+#define AVX512_STEP(f, a, b, c, d, r, k) { \
+    (a) = _mm512_add_epi32((a), _mm512_add_epi32(_mm512_ternarylogic_epi32((b), (c), (d), (f)), (k))); \
+    (a) = _mm512_add_epi32(_mm512_rol_epi32((a), (r)), (b)); \
+}
+
+#define T0 0xba03c619
+#define T1 0xe43c3514
+
+static uint32_t md5_avx512(__m512i x0, __m512i x1, __m512i x2) {
+    __m512i a = _mm512_setzero_si512();
+    __m512i b = _mm512_setzero_si512();
+    __m512i c = _mm512_setzero_si512();
+    __m512i d = _mm512_setzero_si512();
+
+    // Round 1
+    AVX512_STEP(AVX512_F, a, b, c, d, 7, _mm512_add_epi32(x0, _mm512_set1_epi32(0xd76aa478)));
+    AVX512_STEP(AVX512_F, d, a, b, c, 12, _mm512_add_epi32(x1, _mm512_set1_epi32(0xe8c7b756)));
+    AVX512_STEP(AVX512_F, c, d, a, b, 17, _mm512_add_epi32(x2, _mm512_set1_epi32(0x242070db)));
+    AVX512_STEP(AVX512_F, b, c, d, a, 22, _mm512_set1_epi32(0xc1bdceee));
+
+    AVX512_STEP(AVX512_F, a, b, c, d, 7, _mm512_set1_epi32(0xf57c0faf));
+    AVX512_STEP(AVX512_F, d, a, b, c, 12, _mm512_set1_epi32(0x4787c62a));
+    AVX512_STEP(AVX512_F, c, d, a, b, 17, _mm512_set1_epi32(0xa8304613));
+    AVX512_STEP(AVX512_F, b, c, d, a, 22, _mm512_set1_epi32(0xfd469501));
+
+    AVX512_STEP(AVX512_F, a, b, c, d, 7, _mm512_set1_epi32(0x698098d8));
+    AVX512_STEP(AVX512_F, d, a, b, c, 12, _mm512_set1_epi32(0x8b44f7af));
+    AVX512_STEP(AVX512_F, c, d, a, b, 17, _mm512_set1_epi32(0xffff5bb1));
+    AVX512_STEP(AVX512_F, b, c, d, a, 22, _mm512_set1_epi32(0x895cd7be));
+
+    AVX512_STEP(AVX512_F, a, b, c, d, 7, _mm512_set1_epi32(0x6b901122));
+    AVX512_STEP(AVX512_F, d, a, b, c, 12, _mm512_set1_epi32(0xfd987193));
+    AVX512_STEP(AVX512_F, c, d, a, b, 17, _mm512_set1_epi32(0xa67943e6));
+    AVX512_STEP(AVX512_F, b, c, d, a, 22, _mm512_set1_epi32(0x49b40821));
+
+    // Round 2
+    AVX512_STEP(AVX512_G, a, b, c, d, 5, _mm512_add_epi32(x1, _mm512_set1_epi32(0xf61e2562)));
+    AVX512_STEP(AVX512_G, d, a, b, c, 9, _mm512_set1_epi32(0xc040b340));
+    AVX512_STEP(AVX512_G, c, d, a, b, 14, _mm512_set1_epi32(0x265e5a51));
+    AVX512_STEP(AVX512_G, b, c, d, a, 20, _mm512_add_epi32(x0, _mm512_set1_epi32(0xe9b6c7aa)));
+
+    AVX512_STEP(AVX512_G, a, b, c, d, 5, _mm512_set1_epi32(0xd62f105d));
+    AVX512_STEP(AVX512_G, d, a, b, c, 9, _mm512_set1_epi32(0x02441453));
+    AVX512_STEP(AVX512_G, c, d, a, b, 14, _mm512_set1_epi32(0xd8a1e681));
+    AVX512_STEP(AVX512_G, b, c, d, a, 20, _mm512_set1_epi32(0xe7d3fbc8));
+
+    AVX512_STEP(AVX512_G, a, b, c, d, 5, _mm512_set1_epi32(0x21e1cde6));
+    AVX512_STEP(AVX512_G, d, a, b, c, 9, _mm512_set1_epi32(0xc337082e));
+    AVX512_STEP(AVX512_G, c, d, a, b, 14, _mm512_set1_epi32(0xf4d50d87));
+    AVX512_STEP(AVX512_G, b, c, d, a, 20, _mm512_set1_epi32(0x455a14ed));
+
+    AVX512_STEP(AVX512_G, a, b, c, d, 5, _mm512_set1_epi32(0xa9e3e905));
+    AVX512_STEP(AVX512_G, d, a, b, c, 9, _mm512_add_epi32(x2, _mm512_set1_epi32(0xfcefa3f8)));
+    AVX512_STEP(AVX512_G, c, d, a, b, 14, _mm512_set1_epi32(0x676f02d9));
+    AVX512_STEP(AVX512_G, b, c, d, a, 20, _mm512_set1_epi32(0x8d2a4c8a));
+
+    // Round 3
+    AVX512_STEP(AVX512_H, a, b, c, d, 4, _mm512_set1_epi32(0xfffa3942));
+    AVX512_STEP(AVX512_H, d, a, b, c, 11, _mm512_set1_epi32(0x8771f681));
+    AVX512_STEP(AVX512_H, c, d, a, b, 16, _mm512_set1_epi32(0x6d9d6122));
+    AVX512_STEP(AVX512_H, b, c, d, a, 23, _mm512_set1_epi32(0xfde53864));
+
+    AVX512_STEP(AVX512_H, a, b, c, d, 4, _mm512_add_epi32(x1, _mm512_set1_epi32(0xa4beea44)));
+    AVX512_STEP(AVX512_H, d, a, b, c, 11, _mm512_set1_epi32(0x4bdecfa9));
+    AVX512_STEP(AVX512_H, c, d, a, b, 16, _mm512_set1_epi32(0xf6bb4b60));
+    AVX512_STEP(AVX512_H, b, c, d, a, 23, _mm512_set1_epi32(0xbebfbc70));
+
+    AVX512_STEP(AVX512_H, a, b, c, d, 4, _mm512_set1_epi32(0x289b7ec6));
+    AVX512_STEP(AVX512_H, d, a, b, c, 11, _mm512_add_epi32(x0, _mm512_set1_epi32(0xeaa127fa)));
+    AVX512_STEP(AVX512_H, c, d, a, b, 16, _mm512_set1_epi32(0xd4ef3085));
+    AVX512_STEP(AVX512_H, b, c, d, a, 23, _mm512_set1_epi32(0x04881d05));
+
+    AVX512_STEP(AVX512_H, a, b, c, d, 4, _mm512_set1_epi32(0xd9d4d039));
+    AVX512_STEP(AVX512_H, d, a, b, c, 11, _mm512_set1_epi32(0xe6db99e5));
+    AVX512_STEP(AVX512_H, c, d, a, b, 16, _mm512_set1_epi32(0x1fa27cf8));
+    AVX512_STEP(AVX512_H, b, c, d, a, 23, _mm512_add_epi32(x2, _mm512_set1_epi32(0xc4ac5665)));
+
+    // Round 4
+    AVX512_STEP(AVX512_I, a, b, c, d, 6, _mm512_add_epi32(x0, _mm512_set1_epi32(0xf4292244)));
+    AVX512_STEP(AVX512_I, d, a, b, c, 10, _mm512_set1_epi32(0x432aff97));
+    AVX512_STEP(AVX512_I, c, d, a, b, 15, _mm512_set1_epi32(0xab9423ff));
+    AVX512_STEP(AVX512_I, b, c, d, a, 21, _mm512_set1_epi32(0xfc93a039));
+
+    AVX512_STEP(AVX512_I, a, b, c, d, 6, _mm512_set1_epi32(0x655b59c3));
+    AVX512_STEP(AVX512_I, d, a, b, c, 10, _mm512_set1_epi32(0x8f0ccc92));
+    AVX512_STEP(AVX512_I, c, d, a, b, 15, _mm512_set1_epi32(0xffeff47d));
+    AVX512_STEP(AVX512_I, b, c, d, a, 21, _mm512_add_epi32(x1, _mm512_set1_epi32(0x85845dd1)));
+
+    AVX512_STEP(AVX512_I, a, b, c, d, 6, _mm512_set1_epi32(0x6fa87e4f));
+    AVX512_STEP(AVX512_I, d, a, b, c, 10, _mm512_set1_epi32(0xfe2ce6e0));
+    AVX512_STEP(AVX512_I, c, d, a, b, 15, _mm512_set1_epi32(0xa3014314));
+    AVX512_STEP(AVX512_I, b, c, d, a, 21, _mm512_set1_epi32(0x4e0811a1));
+
+    AVX512_STEP(AVX512_I, a, b, c, d, 6, _mm512_set1_epi32(0xf7537e82));
+    AVX512_STEP(AVX512_I, d, a, b, c, 10, _mm512_set1_epi32(0xbd3af235));
+    AVX512_STEP(AVX512_I, c, d, a, b, 15, _mm512_add_epi32(x2, _mm512_set1_epi32(0x2ad7d2bb)));
+    AVX512_STEP(AVX512_I, b, c, d, a, 21, _mm512_set1_epi32(0xeb86d391));
+
+    __mmask16 eq_c = _mm512_cmpeq_epi32_mask(c, _mm512_set1_epi32(T0));
+    __mmask16 eq_d = _mm512_cmpeq_epi32_mask(d, _mm512_set1_epi32(T1));
+    __mmask16 eq = eq_c & eq_d;
+
+    if (eq) {
+        __attribute__((aligned(64))) uint32_t _x0[16], _x1[16], _x2[16];
+        _mm512_store_si512(_x0, x0);
+        _mm512_store_si512(_x1, x1);
+        _mm512_store_si512(_x2, x2);
+
+        for (int i = 0; i < 16; i++)
+            if ((eq >> i) & 1)
+                printf("found: %.4s%.4s%.4s\n", (uint8_t *)&_x0[i], (uint8_t *)&_x1[i], (uint8_t *)&_x2[i]);
+    }
+}
+
+#define A 62
+#define NTHREADS 8
+
+const char ALPHABET[64] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz00";
+const char ALPHABET_S4[50] = "012345ABCDEFGHIJKLMNOPQRSTUVabcdefghijklmnopqrstuv";
+
+static void *search(void *arg) {
+    __attribute__((aligned(64))) uint32_t _x0[16], _x1[16], _x2[16];
+
+    int n = (uint64_t)arg;
+
+    int start = n * (50 / NTHREADS);
+    int end = n != NTHREADS - 1 ? (n + 1) * (50 / NTHREADS) : 50;
+
+    printf("starting search [%d, %d)\n", start, end);
+
+    uint8_t flag[12] = { 0 };
+    flag[11] = 0x80;
+
+    const __m512i Y0 = _mm512_setr_epi32(48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70);
+    const __m512i Y1 = _mm512_setr_epi32(71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86);
+    const __m512i Y2 = _mm512_setr_epi32(87, 88, 89, 90, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108);
+    const __m512i Y3 = _mm512_setr_epi32(109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 48, 48);
+
+    for (int c0 = start; c0 < end; c0++) {
+        flag[9] = ALPHABET_S4[c0];
+        flag[0] = ALPHABET_S4[c0] + 1;
+        flag[7] = ALPHABET_S4[c0] + 4;
+        for (int c1 = 0; c1 < A; c1++) {
+            flag[1] = flag[10] = ALPHABET[c1];
+            for (int c2 = 0; c2 < A; c2++) {
+                flag[2] = flag[4] = ALPHABET[c2];
+                for (int c3 = 0; c3 < A; c3++) {
+                    flag[3] = ALPHABET[c3];
+                    for (int c4 = 0; c4 < A; c4++) {
+                        flag[5] = ALPHABET[c4];
+                        for (int c5 = 0; c5 < A; c5++) {
+                            flag[6] = ALPHABET[c5];
+
+                            uint32_t *flag_u32 = (uint32_t *)flag;
+                            for (int i = 0; i < 16; i++) {
+                                _x0[i] = flag_u32[0];
+                                _x1[i] = flag_u32[1];
+                                _x2[i] = flag_u32[2];
+                            }
+
+                            __m512i x0 = _mm512_load_si512(_x0);
+                            __m512i x1 = _mm512_load_si512(_x1);
+                            __m512i x2 = _mm512_load_si512(_x2);
+
+                            md5_avx512(x0, x1, _mm512_or_si512(x2, Y0));
+                            md5_avx512(x0, x1, _mm512_or_si512(x2, Y1));
+                            md5_avx512(x0, x1, _mm512_or_si512(x2, Y2));
+                            md5_avx512(x0, x1, _mm512_or_si512(x2, Y3));
+                        }
+                    }
+                }
+            }
+        }
+        printf("checkpoint: %d (thread %d)\n", c0, n);
+    }
+}
+
+int main() {
+    pthread_t threads[NTHREADS];
+    for (uint64_t i = 0; i < NTHREADS; i++)
+        pthread_create(&threads[i], NULL, search, (void *)i);
+    for (uint64_t i = 0; i < NTHREADS; i++)
+        pthread_join(threads[i], NULL);
+    return 0;
+}
+```
+
+Kết quả trả về là chuỗi ``corctf{cPv3v8VfWbP}``, chạy lại chương trình và lấy flag thật của challenge
+
+```
+┌──(kali㉿kali)-[~/Desktop]
+└─$ ./digestme      
+Welcome!
+Please enter the flag here: 
+corctf{cPv3v8VfWbP}
+Nice!
+
+Full flag: corctf{youtu.be/dQw4w9WgXcQ}
+                                                                                                                                                                                                                                           
+┌──(kali㉿kali)-[~/Desktop]
+└─$ 
+```
