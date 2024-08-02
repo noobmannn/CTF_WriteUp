@@ -404,7 +404,7 @@ Nhưng có vẻ như máy của mình quá yếu :(
 
 ![image](https://github.com/user-attachments/assets/9e1840f4-cd44-4e24-8280-86a5296d82c6)
 
-Một cách khác mình tham khảo từ team ``Maple Bacon`` là viết chương trình bằng code C, sử dụng Vector hoá ``AVX-512``, và thiết lặp chạy đa luồng nhằm giảm thời gian brute-force, bằng cách này thời gian brute-force sẽ giảm còn xuống khoảng 1 tiếng rưỡi. Các bạn có thể đọc kĩ hơn ở [đây](https://maplebacon.org/2024/07/corctf-digest-me/)
+Một cách khác mình tham khảo từ team ``Maple Bacon`` là viết chương trình bằng code C, sử dụng Vector hoá ``AVX-512``, và thiết lặp chạy đa luồng nhằm giảm thời gian brute-force, bằng cách này thời gian brute-force sẽ giảm còn xuống khoảng 1 tiếng rưỡi. Các bạn có thể đọc kĩ hơn ở [đây](https://maplebacon.org/2024/07/corctf-digest-me/) Rất tiếc là máy của mình gà đến nỗi ``AVX-512`` cũng không có :(
 
 ```C
 // gcc -O3 -march=native -o brute brute.c && ./brute
@@ -622,3 +622,9 @@ Full flag: corctf{youtu.be/dQw4w9WgXcQ}
 ┌──(kali㉿kali)-[~/Desktop]
 └─$ 
 ```
+
+# Note
+
+Hãy mua máy M1 hoặc Chip 2080 để Brute-force phê hơn :v
+
+![image](https://github.com/user-attachments/assets/3131e7f5-a736-4705-bc77-8b45c9ff2083)
