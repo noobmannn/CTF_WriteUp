@@ -349,8 +349,96 @@ Tiếp theo sau chương trình gọi hàng loạt các API liên quan đến x�
       v24 = WinHttpOpenRequest(v23, (LPCWSTR)this->methodHTTP, 0, 0, 0, 0, 0);
 ```
 
+#### Phân tích gói tin thứ nhất
+
 Lúc này quay qua phân tích file ``traffic.pcapng`` bằng wireshark và đọc gói tin như dưới đây, có thể thấy chương trình dùng phương thức POST để gửi đến host gồm chuỗi user-agent có chứa giá trị random và chuỗi ``ahoy`` đã bị mã hoá bằng RC4 và base64, sau đó host sẽ trả về một chuỗi base64 khác như hình dưới
 
 ![image](https://github.com/user-attachments/assets/a1688ed1-5470-461c-b625-a0aa2cfbe45b)
 
+Có thể thấy Host trả về phản hồi là chuỗi Base64 sau
+
+```
+TdQdBRa1nxGU06dbB27E7SQ7TJ2+cd7zstLXRQcLbmh2nTvDm1p5IfT/Cu0JxShk6tHQBRWwPlo9zA1dISfslkLgGDs41WK12ibWIflqLE4Yq3OYIEnLNjwVHrjL2U4Lu3ms+HQc4nfMWXPgcOHb4fhokk93/AJd5GTuC5z+4YsmgRh1Z90yinLBKB+fmGUyagT6gon/KHmJdvAOQ8nAnl8K/0XG+8zYQbZRwgY6tHvvpfyn9OXCyuct5/cOi8KWgALvVHQWafrp8qB/JtT+t5zmnezQlp3zPL4sj2CJfcUTK5copbZCyHexVD4jJN+LezJEtrDXP1DJNg==
+```
+
+Lúc này để phân tích hành vi của chương trình khi nhận được Response, ta cần phải tìm cách chèn dữ liệu giả trỏ tới địa chỉ máy chủ có thể kiểm soát được, ví dụ như ``localhosst``
+
+Trong Windows, ta chỉnh sửa lại nội dung file ``C:\Windows\System32\drivers\etc\hosts`` như dưới đây
+
+![image](https://github.com/user-attachments/assets/ad48e6c9-000d-41bd-9300-572fe3aa7949)
+
+Đồng thời cần có một chương trình để xử lý các truy vấn HTTP POST, ở đây mình sẽ dùng Flask để giả lập trả lại Response, như dưới đây:
+
+```python
+from flask import Flask, request, Response
+import hashlib
+from RC4Encryption import RC4Encryption
+import base64
+
+app = Flask(__name__)
+c = True
+@app.route('/', methods=['POST'])
+def handle_post():
+    global c
+    if c:
+        dat = b"TdQdBRa1nxGU06dbB27E7SQ7TJ2+cd7zstLXRQcLbmh2nTvDm1p5IfT/Cu0JxShk6tHQBRWwPlo9zA1dISfslkLgGDs41WK12ibWIflqLE4Yq3OYIEnLNjwVHrjL2U4Lu3ms+HQc4nfMWXPgcOHb4fhokk93/AJd5GTuC5z+4YsmgRh1Z90yinLBKB+fmGUyagT6gon/KHmJdvAOQ8nAnl8K/0XG+8zYQbZRwgY6tHvvpfyn9OXCyuct5/cOi8KWgALvVHQWafrp8qB/JtT+t5zmnezQlp3zPL4sj2CJfcUTK5copbZCyHexVD4jJN+LezJEtrDXP1DJNg=="
+        c = not(c)
+        return Response(dat, mimetype='application/octet-stream')
+    else:
+        dat = 'F1KFlZbNGuKQxrTD/ORwudM8S8kKiL5F906YlR8TKd8XrKPeDYZ0HouiBamyQf9/Ns7u3C2UEMLoCA0B8EuZp1FpwnedVjPSdZFjkieYqWzKA7up+LYe9B4dmAUM2lYkmBSqPJYT6nEg27n3X656MMOxNIHt0HsOD0d+'
+        c = not(c)
+        return Response(dat, mimetype='application/octet-stream')
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0",port=80)
+```
+
+Lúc này đặt Breakpoint tại lệnh phía sau ``WinHttpReadData`` và trace tới đó
+
+![image](https://github.com/user-attachments/assets/057b5122-529a-44bd-b536-76865b9a108e)
+
+Ta giả lập thành công Host và data trả về được lưu ở ``dword ptr [edi+44h]``
+
+![image](https://github.com/user-attachments/assets/7103c45e-f4f5-4cc2-b653-3741a3a1b643)
+
+Sau khi nhận được data response, chương trình nhảy vào ``sub_8F4200`` -> ``sub_8F43F0`` trong ``vftable`` để giải mã response
+
+```
+  DataResponePointer = (void *)this->DataResponePointer;
+  v21 = a2;
+  Src[4] = 0;
+  v23 = 15;
+  LOBYTE(Src[0]) = 0;
+  maybecpy(Src, DataResponePointer, strlen((const char *)DataResponePointer));
+  v27 = 0;
+  sub_8F1AC0(&v15, Src);
+  ((void (__thiscall *)(thiss *, void **, int, int, int, int, void **, int))this->vftable->decryptbase64)(
+    this,
+    Block,
+    v15,
+    v16,
+    v17,
+    v18,
+    v19,
+    v20);
+  LOBYTE(v27) = 1;
+  v4 = Block;
+  v20 = v25;
+  if ( v26 >= 0x10 )
+    v4 = (void **)Block[0];
+  v19 = v4;
+  maybeMemmove(v14, &this->hashMD5pointer);
+  v5 = (_WORD *)((int (__thiscall *)(thiss *, _DWORD, _DWORD, int, int, int, int, void **, int))this->vftable->rc4)(
+                  this,
+                  v14[0],
+                  v14[1],
+                  v15,
+                  v16,
+                  v17,
+                  v18,
+                  v19,
+                  v20)
+```
+
+Đọc qua và debug có thể thấy response được giải mã bằng cách decrypt base64 sau đó tiếp decrypt rc4 bằng cách sủ dụng key là chuỗi hash được tạo từ chuỗi ``FO9xxxxx`` được dùng để mã hoá chuỗi ``ahoy`` lúc gửi đi
 
