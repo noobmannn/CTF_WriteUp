@@ -487,3 +487,22 @@ Debug lại và ta lấy được flag của challenge
 
 ![image](https://github.com/user-attachments/assets/9e4efe68-4710-420a-bda3-23b2522e5904)
 
+#### Phân tích gói tin thứ hai
+
+Quay lại hàm ``main``, sau khi thu được flag, chương trình sẽ hash flag thu được (ở dạng widechar) rồi đẩy vào ``thiss->hashMD5pointer``, tiếp theo chương trình mã hoá chuỗi widechar ``sce`` bằng rc4 với key là hash flag, sau đó lại encrypt base64, ở đoạn lấy user-agent, phần được thêm vào cuối là chuỗi ``CLR``, sau đó gửi về cho host
+
+Phân tích gói tin thứ hai như hình dưới đây, có thể thấy host trả về một chuối base64 khác
+
+![image](https://github.com/user-attachments/assets/31300333-8912-4e67-bdc0-2deaad81e9df)
+
+Bằng cách giả lập lại Flask rồi debug tiếp, ta thấy chuỗi base64 được trả về sau khi giải mã base64 và rc4 là một đoạn shellcode
+
+![image](https://github.com/user-attachments/assets/8cbd49a4-98b9-4020-b1c3-2f80526137cd)
+
+Debug tiếp để thực thi shellcode, ta thu được MessageBox như hình dưới
+
+![image](https://github.com/user-attachments/assets/88fff075-8cc9-497a-a1c7-1dc36c65d2a6)
+
+# Flag
+
+```i_s33_you_m00n@flare-on.com```
