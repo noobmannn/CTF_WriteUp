@@ -1,6 +1,6 @@
 # t8
 
-Challenge cho một file PE32 ``t8.exe`` và một file pcap
+Challenge cho một file PE32 ``t8.exe`` và một file pcap ``traffic.pcapng``
 
 ![image](https://github.com/user-attachments/assets/f2a19dee-1ed5-4258-81e0-25d9b6c4060a)
 
@@ -241,7 +241,116 @@ Phần tiếp theo của chương trình chỉ là tạo một chuỗi widechar 
   maybeMemmove(&v28, v38);                      // ahoy
 ```
 
-Tiếp theo chương trình chạy vào hàm ``sub_403D70`` để thực hiện giao thức HTTP
+Tiếp theo chương trình chạy vào hàm ``sub_403D70`` để thực hiện giao thức HTTP, để thuận tiện phân tích thì mình đổi tên hàm này thành ``sendDataHTTP``
 
 ### Giao thức HTTP
+
+Tiến hành phân tích hàm ``sendDataHTTP``, đầu tiên hàm này mã hoá RC4 chuối ``ahoy`` mới key là hash của chuỗi ``FO97271``, sau đó tiếp tục Encrypt Base64 kết quả
+
+```C
+  v49 = 0;
+  v9 = 2 * a6;
+  v35 = (LPDWORD)(2 * a6);
+  p_Block = &Block;
+  if ( a7 >= 8 )
+    p_Block = (_DWORD **)Block;
+  v34 = p_Block;
+  maybeMemmove(v33, &this->hashMD5pointer);
+  v11 = ((int (__thiscall *)(thiss *, _DWORD, _DWORD, _DWORD, _DWORD, _DWORD, _DWORD, HINTERNET, LPDWORD))this->vftable->rc4)(
+          this,
+          v33[0],
+          v33[1],
+          v33[2],
+          v33[3],
+          v33[4],
+          v33[5],
+          v34,
+          v35);                                 // rc4, key la hash, plaintext la widechar 'ahoy'
+  this->vftable->base64encode((int)this, (int)lpOptional, v11, v9);
+```
+
+Tiếp theo, chương trình gọi hàm ``ObtainUserAgentString`` để lấy ``user-agent``, sau đó nối chuỗi số ngẫu nhiên mà chương trình gen ra trước đó nối vào sau User-Agent, trong trường hợp của mình là ``7271``
+
+```C
+  if ( ObtainUserAgentString(0, pszUAOut, &cbSize) )
+  {
+    if ( v45 >= 8 )
+    {
+      v13 = lpOptional[0];
+      v14 = (DWORD *)(2 * v45 + 2);
+      if ( (unsigned int)v14 >= 0x1000 )
+      {
+        v13 = (void *)*((_DWORD *)lpOptional[0] - 1);
+        v14 = (DWORD *)(2 * v45 + 37);
+        if ( (unsigned int)(lpOptional[0] - v13 - 4) > 0x1F )
+          goto LABEL_50;
+      }
+      v35 = v14;
+      free(v13);
+    }
+    v44 = 0;
+    v45 = 7;
+    LOWORD(lpOptional[0]) = 0;
+    if ( a7 < 8 )
+      return 0;
+    v15 = Block;
+    v16 = (DWORD *)(2 * a7 + 2);
+    if ( (unsigned int)v16 < 0x1000
+      || (v15 = (_DWORD *)*(Block - 1),
+          v16 = (DWORD *)(2 * a7 + 37),
+          (unsigned int)((char *)Block - (char *)v15 - 4) <= 0x1F) )
+    {
+      v35 = v16;
+      free(v15);
+      return 0;
+    }
+LABEL_50:
+    _invalid_parameter_noinfo_noreturn();
+  }
+  if ( cbSize - 2 >= 0x200 )
+  {
+    __report_rangecheckfailure();
+    goto LABEL_50;
+  }
+  v18 = dword_940870;
+  pszUAOut[cbSize - 2] = 0;
+  convertWidechar1((void **)Source, v18);
+  mbstowcs_s(&PtNumOfCharConverted, DstBuf, 0x200u, pszUAOut, strlen(pszUAOut));
+  wcscat_s(DstBuf, 0x200u, L"; ");
+  if ( a8 )
+  {
+    v19 = (const wchar_t *)Source;
+    if ( v41 >= 8 )
+      v19 = Source[0];
+  }
+  else
+  {
+    v19 = L"CLR";
+  }
+  wcscat_s(DstBuf, 0x200u, v19);
+  wcscat_s(DstBuf, 0x200u, L")");
+```
+
+Tiếp theo sau chương trình gọi hàng loạt các API liên quan đến xử lý gói tin HTTP như ``WinHttpOpen``, ``WinHttpConnect``, ``WinHttpOpenRequest``, ``WinHttpSendRequest``, ``WinHttpReceiveResponse``, ``WinHttpQueryDataAvailabl``, ``WinHttpReadData``, ... Đọc qua đoạn code tiếp theo cũng có thể thấy chương trình đang tạo kết nối HTTP tới host là ``flare-on.com``, với method là ``POST``
+
+```C
+  v20 = WinHttpOpen(DstBuf, 0, 0, 0, 0);        // noi number random vao chuoi user agent
+  v37 = v20;
+  if ( v20 )
+  {
+    p_flareondotcom = (const WCHAR *)&this->flareondotcom;
+    if ( this->is0xF >= 8 )
+      p_flareondotcom = *(const WCHAR **)p_flareondotcom;
+    v22 = (void (__stdcall *)(HINTERNET))WinHttpCloseHandle;
+    v23 = WinHttpConnect(v20, p_flareondotcom, 0x50u, 0);
+    hInternet = v23;
+    if ( v23 )
+    {
+      v24 = WinHttpOpenRequest(v23, (LPCWSTR)this->methodHTTP, 0, 0, 0, 0, 0);
+```
+
+Lúc này quay qua phân tích file ``traffic.pcapng`` bằng wireshark và đọc gói tin như dưới đây, có thể thấy chương trình dùng phương thức POST để gửi đến host gồm chuỗi user-agent có chứa giá trị random và chuỗi ``ahoy`` đã bị mã hoá bằng RC4 và base64, sau đó host sẽ trả về một chuỗi base64 khác như hình dưới
+
+![image](https://github.com/user-attachments/assets/a1688ed1-5470-461c-b625-a0aa2cfbe45b)
+
 
