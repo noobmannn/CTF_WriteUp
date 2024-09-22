@@ -1,0 +1,15 @@
+struct thiss
+{
+  struct struc_D4B918 *vftable;
+  BYTE methodHTTP[16];
+  DWORD flareondotcom;
+  BYTE sus1[12];
+  DWORD is0xC;
+  DWORD is0xF;
+  DWORD hashMD5pointer;
+  BYTE sus2[20];
+  DWORD DataResponePointer;
+  DWORD isunk;
+};
+
+// i_s33_you_m00n@flare-on.com
